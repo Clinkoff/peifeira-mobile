@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSegments } from 'expo-router';
 import { authApi } from '@/lib/api/authApi';
-import { storage } from '../utils/storage';
-import type { Usuario, LoginRequest } from '@/lib/types'; // ← Importar dos types corretos
+import { storage } from '@/lib/utils/storage';
+import type { Usuario, LoginRequest } from '@/lib/types';
 
 export function useAuth() {
   const [user, setUser] = useState<Usuario | null>(null);
@@ -43,11 +43,17 @@ export function useAuth() {
   const login = async (data: LoginRequest) => {
     try {
       const response = await authApi.login(data);
-      
-      // // Verificar se é professor
-      // if (response.usuario.role !== 'Professor') {
-      //   throw new Error('Apenas professores podem acessar este aplicativo');
-      // }
+         
+      // Verificar se é professor
+      if (response.usuario.role !== 'Professor') {
+        throw new Error('Apenas professores podem acessar este aplicativo');
+      }
+
+      // Verificar se tem perfilProfessor
+      if (!response.usuario.perfilProfessor?.id) {
+        console.warn('⚠️ AVISO: PerfilProfessor não encontrado!');
+        throw new Error('Perfil de professor não cadastrado. Entre em contato com o coordenador.');
+      }
 
       await storage.saveToken(response.token);
       await storage.saveUser(response.usuario);
@@ -55,7 +61,7 @@ export function useAuth() {
       
       router.replace('/');
     } catch (error: any) {
-      console.error('Erro no login:', error);
+      console.error('❌ Erro no login:', error);
       throw error;
     }
   };
